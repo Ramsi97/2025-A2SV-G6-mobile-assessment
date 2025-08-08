@@ -1,6 +1,6 @@
 import 'package:chatting_app/core/error/exceptions.dart';
 import 'package:chatting_app/features/authentication/data/model/person_model.dart';
-import 'package:http/http.dart' as client;
+import 'package:http/http.dart' as http;
 
 abstract class AuthRemoteDataSource {
   Future<void> signup(PersonModel person);
@@ -8,6 +8,10 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+  final http.Client client;
+
+  AuthRemoteDataSourceImpl({required this.client});
+
   @override
   Future<void> signup(PersonModel person) async {
     final result = await client.post(

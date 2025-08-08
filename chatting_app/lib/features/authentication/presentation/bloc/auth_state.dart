@@ -11,14 +11,7 @@ final class AuthInitial extends AuthState {}
 
 final class AuthLoading extends AuthState {}
 
-final class Authenticated extends AuthState {
-  final String token;
-
-  const Authenticated(this.token);
-
-  @override
-  List<Object> get props => [token];
-}
+final class Authenticated extends AuthState {}
 
 final class Unauthenticated extends AuthState {}
 

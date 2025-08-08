@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:chatting_app/core/usecase/usecase.dart';
-import 'package:chatting_app/features/authentication/data/datasources/auth_local_data_source.dart';
 import 'package:chatting_app/features/authentication/domain/entity/person.dart';
 import 'package:chatting_app/features/authentication/domain/usecase/is_logged_in.dart';
 import 'package:chatting_app/features/authentication/domain/usecase/login.dart';
@@ -18,7 +15,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final Logout logoutUsecase;
   final Signup signupUsecase;
   final IsLoggedIn isLogedInUsecase;
-  final AuthLocalDataSource localDataSource;
 
   static const cachedTokenKey = 'token';
 
@@ -27,12 +23,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required Logout logout,
     required Signup signup,
     required IsLoggedIn isLoggedIn,
-    required AuthLocalDataSource authLocalDataSource,
   }) : loginUsecase = login,
        logoutUsecase = logout,
        signupUsecase = signup,
        isLogedInUsecase = isLoggedIn,
-       localDataSource = authLocalDataSource,
        super(AuthInitial()) {
     // ✅ Each event is registered independently and at the top level
 
@@ -42,8 +36,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         (failure) async => emit(AuthError('Failed to check login status')),
         (isLoggedIn) async {
           if (isLoggedIn) {
-            final token = await localDataSource.getToken();
-            emit(Authenticated(token));
+            emit(Authenticated());
           } else {
             emit(Unauthenticated());
           }
@@ -53,9 +46,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     on<LoggedIn>((event, emit) async {
       emit(AuthLoading());
-      await localDataSource.cachetoken(cachedTokenKey);
-      final token = await localDataSource.getToken();
-      emit(Authenticated(token));
+      emit(Authenticated());
     });
 
     on<LoggedOut>((event, emit) async {
@@ -74,7 +65,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthError('Sign up failed'));
         },
         (_) async {
-          await localDataSource.cachetoken(cachedTokenKey);
           emit(Unauthenticated());
         },
       );
@@ -90,8 +80,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthError('Login failed'));
         },
         (_) async {
-          final token = await localDataSource.getToken();
-          emit(Authenticated(token));
+          emit(Authenticated());
         },
       );
     });
