@@ -9,15 +9,13 @@ class Login implements Usecase<void, Params> {
   Login(this.repository);
   @override
   Future<Either<Failure, void>> call(Params params) {
-    // Implement the login logic here
-    // For now, we return a placeholder response
-    return repository.login(params.username, params.password);
+    return repository.login(params.email, params.password);
   }
 }
 
 class Params {
-  final String username;
+  final String email;
   final String password;
 
-  Params({required this.username, required this.password});
+  Params({required this.email, required this.password});
 }

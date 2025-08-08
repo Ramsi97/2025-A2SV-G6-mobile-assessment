@@ -59,7 +59,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     try {
-      await authLocalDataSource.cleartoken();
+      await authLocalDataSource.logout();
       return Future.value(Right(null));
     } on CacheException {
       return Future.value(Left(CacheFailure()));
@@ -69,8 +69,8 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, bool>> isLoggedIn() async {
     try {
-      final token = await authLocalDataSource.getToken();
-      return Right(token.isNotEmpty);
+      final token = await authLocalDataSource.isLoggedIn();
+      return Right(token);
     } on CacheException {
       return Left(CacheFailure());
     }

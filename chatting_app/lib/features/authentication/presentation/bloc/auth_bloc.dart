@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
+import 'package:chatting_app/core/usecase/usecase.dart';
+import 'package:chatting_app/features/authentication/data/datasources/auth_local_data_source.dart';
+import 'package:chatting_app/features/authentication/domain/entity/person.dart';
 import 'package:chatting_app/features/authentication/domain/usecase/is_logged_in.dart';
 import 'package:chatting_app/features/authentication/domain/usecase/login.dart';
 import 'package:chatting_app/features/authentication/domain/usecase/logout.dart';
@@ -13,20 +18,82 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final Logout logoutUsecase;
   final Signup signupUsecase;
   final IsLoggedIn isLogedInUsecase;
+  final AuthLocalDataSource localDataSource;
+
+  static const cachedTokenKey = 'token';
 
   AuthBloc({
     required Login login,
     required Logout logout,
     required Signup signup,
     required IsLoggedIn isLoggedIn,
+    required AuthLocalDataSource authLocalDataSource,
   }) : loginUsecase = login,
        logoutUsecase = logout,
        signupUsecase = signup,
        isLogedInUsecase = isLoggedIn,
+       localDataSource = authLocalDataSource,
        super(AuthInitial()) {
-    on<AuthEvent>((event, emit) {
-      // Basic event handler: emit initial state for any event
-      emit(AuthInitial());
+    // ✅ Each event is registered independently and at the top level
+
+    on<AuthCheckedRequested>((event, emit) async {
+      final isLoggedIn = await isLogedInUsecase(NoParams());
+      await isLoggedIn.fold(
+        (failure) async => emit(AuthError('Failed to check login status')),
+        (isLoggedIn) async {
+          if (isLoggedIn) {
+            final token = await localDataSource.getToken();
+            emit(Authenticated(token));
+          } else {
+            emit(Unauthenticated());
+          }
+        },
+      );
+    });
+
+    on<LoggedIn>((event, emit) async {
+      emit(AuthLoading());
+      await localDataSource.cachetoken(cachedTokenKey);
+      final token = await localDataSource.getToken();
+      emit(Authenticated(token));
+    });
+
+    on<LoggedOut>((event, emit) async {
+      emit(AuthLoading());
+      await logoutUsecase();
+      emit(Unauthenticated());
+    });
+
+    on<SignUpRequested>((event, emit) async {
+      emit(AuthLoading());
+      final result = await signupUsecase(
+        Person(name: event.name, email: event.email, password: event.password),
+      );
+      await result.fold(
+        (failure) async {
+          emit(AuthError('Sign up failed'));
+        },
+        (_) async {
+          await localDataSource.cachetoken(cachedTokenKey);
+          emit(Unauthenticated());
+        },
+      );
+    });
+
+    on<LoginRequested>((event, emit) async {
+      emit(AuthLoading());
+      final result = await loginUsecase(
+        Params(email: event.email, password: event.password),
+      );
+      await result.fold(
+        (failure) async {
+          emit(AuthError('Login failed'));
+        },
+        (_) async {
+          final token = await localDataSource.getToken();
+          emit(Authenticated(token));
+        },
+      );
     });
   }
 }
