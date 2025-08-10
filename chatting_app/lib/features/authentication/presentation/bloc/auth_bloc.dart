@@ -6,6 +6,7 @@ import 'package:chatting_app/features/authentication/domain/usecase/login.dart';
 import 'package:chatting_app/features/authentication/domain/usecase/logout.dart';
 import 'package:chatting_app/features/authentication/domain/usecase/signup.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -33,7 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthCheckedRequested>((event, emit) async {
       final isLoggedIn = await isLogedInUsecase(NoParams());
       await isLoggedIn.fold(
-        (failure) async => emit(AuthError('Failed to check login status')),
+        (failure) async => emit(AuthError(failure.message)),
         (isLoggedIn) async {
           if (isLoggedIn) {
             emit(Authenticated());
@@ -56,33 +57,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     on<SignUpRequested>((event, emit) async {
+      print('1');
       emit(AuthLoading());
+      print('2');
       final result = await signupUsecase(
         Person(name: event.name, email: event.email, password: event.password),
       );
+      print('3');
       await result.fold(
         (failure) async {
-          emit(AuthError('Sign up failed'));
+          emit(AuthError(failure.message));
         },
         (_) async {
           emit(Unauthenticated());
         },
       );
+      print('4');
     });
 
     on<LoginRequested>((event, emit) async {
       emit(AuthLoading());
-      final result = await loginUsecase(
-        Params(email: event.email, password: event.password),
-      );
-      await result.fold(
-        (failure) async {
-          emit(AuthError('Login failed'));
-        },
-        (_) async {
-          emit(Authenticated());
-        },
-      );
+      try {
+        final result = await loginUsecase(
+          Params(email: event.email, password: event.password),
+        );
+
+        result.fold(
+          (failure) => emit(AuthError(failure.message)),
+          (_) => emit(Authenticated()),
+        );
+      } catch (e) {
+        emit(AuthError('Login failed: ${e.toString()}'));
+      }
+    });
+
+    on<ClearAuthError>((event, emit) {
+      if (state is AuthError) {
+        emit(Unauthenticated());
+      }
     });
   }
 }

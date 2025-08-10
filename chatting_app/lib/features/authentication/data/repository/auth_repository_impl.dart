@@ -45,9 +45,9 @@ class AuthRepositoryImpl implements AuthRepository {
           email: person.email,
           password: person.password,
         );
-        return authRemoteDataSource.signup(personModel).then((_) {
-          return Right(null);
-        });
+
+        await authRemoteDataSource.signup(personModel);
+        return Right(null);
       } on ServerException {
         return Future.value(Left(ServerFailure()));
       }
