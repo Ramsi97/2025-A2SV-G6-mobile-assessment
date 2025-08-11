@@ -18,12 +18,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> signup(PersonModel person) async {
     try {
+      dynamic p = person.toJson();
       final response = await client.post(
         Uri.parse(
-          'https://g5-flutter-learning-path-be.onrender.com/api/v3/auth/register',
+          'https://g5-flutter-learning-path-be-tvum.onrender.com/api/v3/auth/register',
         ),
-        body: person.toJson(),
+
+        body: json.encode(person.toJson()),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          // 'Accept': 'application/json',
+        },
       );
+
       if (response.statusCode != 201) {
         throw ServerException();
       }
@@ -35,21 +42,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<String> login(String username, String password) async {
+  Future<String> login(String email, String password) async {
     try {
+      dynamic test = jsonEncode({'email': email, 'password': password});
       final response = await client.post(
         Uri.parse(
-          'https://g5-flutter-learning-path-be.onrender.com/api/v3/auth/login',
+          'https://g5-flutter-learning-path-be-tvum.onrender.com/api/v3/auth/login',
         ),
-        body: jsonEncode({'username': username, 'password': password}),
+        body: jsonEncode({'email': email, 'password': password}),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
       );
-
-      print('Status Code: ${response.statusCode}'); // Debugging
-      print('Response Body: ${response.body}'); // Debugging
 
       if (response.statusCode == 201) {
         try {

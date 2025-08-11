@@ -64,9 +64,22 @@ class _SignUpState extends State<SignUp> {
             context,
           ).showSnackBar(SnackBar(content: Text(state.message)));
         }
-        if (state is Authenticated) {
+        if (state is Unauthenticated) {
           setState(() => _isLoading = false);
-          Navigator.pushReplacementNamed(context, '/home');
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Sign Up Successful!',
+                style: TextStyle(color: Colors.green),
+              ),
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          Future.delayed(const Duration(seconds: 2), () {
+            Navigator.pushReplacementNamed(context, '/login');
+          });
         }
       },
       child: Scaffold(

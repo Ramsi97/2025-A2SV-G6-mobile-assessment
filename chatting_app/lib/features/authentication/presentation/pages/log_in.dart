@@ -1,5 +1,4 @@
 import 'package:chatting_app/features/authentication/presentation/bloc/auth_bloc.dart';
-import 'package:chatting_app/features/authentication/presentation/pages/sign_up.dart';
 import 'package:chatting_app/features/authentication/presentation/widgets/ecom_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,7 +17,6 @@ class _LogInState extends State<LogIn> {
   // Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String? _errorMessage;
   bool _isLoading = false;
 
   @override

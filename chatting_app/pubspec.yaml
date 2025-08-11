@@ -45,6 +45,7 @@ dependencies:
   build_runner: ^2.4.7
   get_it: ^8.2.0
   google_fonts: ^6.3.0
+  socket_io: ^1.0.1
 
 
 dev_dependencies:

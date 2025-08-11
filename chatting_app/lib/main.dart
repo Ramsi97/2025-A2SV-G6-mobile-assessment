@@ -1,9 +1,10 @@
 import 'package:chatting_app/features/authentication/presentation/bloc/auth_bloc.dart';
-import 'package:chatting_app/features/authentication/presentation/pages/home_page.dart';
 import 'package:chatting_app/features/authentication/presentation/pages/log_in.dart';
 import 'package:chatting_app/features/authentication/presentation/pages/sign_up.dart';
 
 import 'package:chatting_app/features/authentication/presentation/pages/splash_screen.dart';
+import 'package:chatting_app/features/chatting/presentation/pages/home_page.dart';
+import 'package:chatting_app/features/chatting/presentation/pages/message_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'injection_container.dart' as di;
@@ -26,12 +27,12 @@ class MyApp extends StatelessWidget {
         child: const AuthWrapper(),
       ),
       routes: {
-        // '/': (context) => const AuthWrapper(),
         '/login': (context) =>
             BlocProvider(create: (_) => di.sl<AuthBloc>(), child: LogIn()),
         '/signup': (context) =>
             BlocProvider(create: (_) => di.sl<AuthBloc>(), child: SignUp()),
         '/home': (context) => const HomePage(),
+        '/message': (context) => const MessagePage(),
       },
     );
   }
@@ -51,8 +52,6 @@ class AuthWrapper extends StatelessWidget {
         } else if (state is Authenticated) {
           return const HomePage();
         } else {
-          // For Unauthenticated and AuthError, show LoginPage
-          // and let it handle the error display
           return const LogIn();
         }
       },
