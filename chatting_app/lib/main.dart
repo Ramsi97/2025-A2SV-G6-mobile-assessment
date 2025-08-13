@@ -3,10 +3,9 @@ import 'package:chatting_app/features/authentication/presentation/pages/log_in.d
 import 'package:chatting_app/features/authentication/presentation/pages/sign_up.dart';
 
 import 'package:chatting_app/features/authentication/presentation/pages/splash_screen.dart';
-import 'package:chatting_app/features/chatting/presentation/pages/home_page.dart';
-import 'package:chatting_app/features/chatting/presentation/pages/message_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'features/authentication/presentation/pages/home_page.dart';
 import 'injection_container.dart' as di;
 
 void main() async {
@@ -32,7 +31,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) =>
             BlocProvider(create: (_) => di.sl<AuthBloc>(), child: SignUp()),
         '/home': (context) => const HomePage(),
-        '/message': (context) => const MessagePage(),
+
       },
     );
   }
