@@ -31,6 +31,7 @@ void main() {
       id: '1',
       chat: chat,
       sender: user1,
+      timestamp: DateTime.now(),
       content: 'Hello',
       type: 'text',
     );
