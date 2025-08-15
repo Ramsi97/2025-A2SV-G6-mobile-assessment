@@ -9,3 +9,5 @@ class NotFoundException implements Exception {
 
   NotFoundException(this.message);
 }
+
+class UnauthorizedException implements Exception {}

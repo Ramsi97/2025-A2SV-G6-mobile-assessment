@@ -3,6 +3,7 @@ import 'package:chatting_app/features/chatting_feature/data/model/user_model.dar
 import 'package:chatting_app/features/chatting_feature/data/model/chat_model.dart';
 
 class MessageModel extends Message {
+
   const MessageModel({
     required super.id,
     required super.sender,
@@ -37,5 +38,17 @@ class MessageModel extends Message {
       'type': type,
       'isRead': isRead,
     };
+  }
+
+  Message toEntity() {
+    return Message(
+      id: id,
+      sender: sender,
+      chat: chat,
+      content: content,
+      timestamp: timestamp,
+      type: type,
+      isRead: isRead,
+    );
   }
 }

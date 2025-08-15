@@ -1,8 +1,9 @@
 import 'package:chatting_app/features/chatting_feature/data/model/user_model.dart';
 import 'package:chatting_app/features/chatting_feature/domain/entities/chat.dart';
 
+
 class ChatModel extends Chat {
-  ChatModel({required super.id, required super.user1, required super.user2});
+  const ChatModel({required super.id, required super.user1, required super.user2});
 
   // Factory constructor to create ChatModel from JSON
   factory ChatModel.fromJson(Map<String, dynamic> json) {

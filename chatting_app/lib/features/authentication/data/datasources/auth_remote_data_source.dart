@@ -18,7 +18,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> signup(PersonModel person) async {
     try {
-      dynamic p = person.toJson();
       final response = await client.post(
         Uri.parse(
           'https://g5-flutter-learning-path-be-tvum.onrender.com/api/v3/auth/register',

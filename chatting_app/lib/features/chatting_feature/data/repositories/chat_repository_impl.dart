@@ -3,21 +3,41 @@ import 'package:chatting_app/core/error/failure.dart';
 import 'package:chatting_app/core/network/network_info.dart';
 import 'package:chatting_app/features/chatting_feature/data/datasource/chat_local_data_source.dart';
 import 'package:chatting_app/features/chatting_feature/data/datasource/chat_remote_data_source.dart';
+import 'package:chatting_app/features/chatting_feature/data/datasource/web_socket_channel_factory.dart';
 import 'package:chatting_app/features/chatting_feature/domain/entities/chat.dart';
 import 'package:chatting_app/features/chatting_feature/domain/entities/message.dart';
 import 'package:chatting_app/features/chatting_feature/domain/repositories/chat_repository.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+import '../../../../core/constant/constant.dart';
+import '../model/chat_model.dart';
 
 class ChatRepositoryImpl extends ChatRepository {
   final ChatLocalDataSource localDataSource;
   final ChatRemoteDataSource remoteDataSource;
   final NetworkInfo networkInfo;
+  final WebSocketChannelFactory channelFactory;
+
+  WebSocketChannel? channel;
+
 
   ChatRepositoryImpl({
     required this.localDataSource,
     required this.remoteDataSource,
     required this.networkInfo,
+    required this.channelFactory,
   });
+
+  void connectSocket(){
+    channel ??= channelFactory.create(wsUrl);
+  }
+
+
+  void dispose() {
+    channel?.sink.close();
+  }
 
   @override
   Future<Either<Failure, void>> deleteChat(String chatId) async {
@@ -71,9 +91,9 @@ class ChatRepositoryImpl extends ChatRepository {
   Future<Either<Failure, Chat>> getChatById(String chatId) async {
     if (await networkInfo.isConnected) {
       try {
-        final chat = await remoteDataSource.getChatById(chatId);
-        await localDataSource.cacheChat(chat); // optional cache update
-        return Right(chat);
+        final chatModel = await remoteDataSource.getChatById(chatId);
+        await localDataSource.cacheChat(chatModel); // optional cache update
+        return Right(chatModel);
       } on NotFoundException {
         return Left(NotFoundFailure('Chat with that ID not found'));
       } on ServerException {
@@ -136,10 +156,10 @@ class ChatRepositoryImpl extends ChatRepository {
 
     if (isConnected) {
       try {
-        final Chat chat = await remoteDataSource.initiateChat(userId);
-        await localDataSource.cacheChat(chat);
+        final ChatModel chatModel = await remoteDataSource.initiateChat(userId);
+        await localDataSource.cacheChat(chatModel);
 
-        return Right(chat);
+        return Right(chatModel);
       } on ServerException {
         try {
           final Chat cachedChat = await localDataSource.getChatById(userId);
@@ -215,4 +235,25 @@ class ChatRepositoryImpl extends ChatRepository {
       }
     }
   }
+
+  @override
+  Future<Either<Failure, void>> sendReadReceipt(String messageId, String readerId) async {
+    try {
+      // ✅ 1. Update local cache immediately for instant UI
+      await localDataSource.markMessageAsRead(messageId);
+
+      // ✅ 2. Send to server if connected
+      if (await networkInfo.isConnected) {
+        await remoteDataSource.sendReadReceipt(
+          messageId: messageId,
+          readerId: readerId,
+        );
+      }
+
+      return const Right(null); // Success
+    } catch (e) {
+      return Left(ServerFailure()); // Or a more specific Failure
+    }
+  }
+
 }

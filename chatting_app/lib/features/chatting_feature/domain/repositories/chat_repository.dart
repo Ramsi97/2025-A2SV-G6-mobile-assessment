@@ -13,5 +13,6 @@ abstract class ChatRepository {
   Future<Either<Failure, List<Message>>> getChatMessage(String chatId);
   Future<Either<Failure, void>> sendMessage(Message message);
   Future<Either<Failure, Stream<Message>>> receiveMessage();
+  Future<Either<Failure, void>> sendReadReceipt(String messageId, String readerId);
 
 }

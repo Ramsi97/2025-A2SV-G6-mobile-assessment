@@ -1,4 +1,5 @@
 import 'package:chatting_app/features/chatting_feature/domain/entities/user.dart';
+import 'package:hive/hive.dart';
 
 class UserModel extends User {
   const UserModel({required super.id, required super.name, required super.email});
