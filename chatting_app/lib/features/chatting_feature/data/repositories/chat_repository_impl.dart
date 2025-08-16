@@ -4,11 +4,11 @@ import 'package:chatting_app/core/network/network_info.dart';
 import 'package:chatting_app/features/chatting_feature/data/datasource/chat_local_data_source.dart';
 import 'package:chatting_app/features/chatting_feature/data/datasource/chat_remote_data_source.dart';
 import 'package:chatting_app/features/chatting_feature/data/datasource/web_socket_channel_factory.dart';
+import 'package:chatting_app/features/chatting_feature/data/model/message_model.dart';
 import 'package:chatting_app/features/chatting_feature/domain/entities/chat.dart';
 import 'package:chatting_app/features/chatting_feature/domain/entities/message.dart';
 import 'package:chatting_app/features/chatting_feature/domain/repositories/chat_repository.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../../core/constant/constant.dart';
@@ -59,12 +59,12 @@ class ChatRepositoryImpl extends ChatRepository {
       try {
         final chats = await remoteDataSource.getChats();
         await localDataSource.cacheChats(chats); // optional: keep cache updated
-        return Right(chats);
+        return Right(chats.map((chat) => chat.toEntity()).toList());
       } on ServerException {
         // Remote failed → try local fallback
         try {
           final cachedChats = await localDataSource.getChats();
-          return Right(cachedChats);
+          return Right(cachedChats.map((chat) => chat.toEntity()).toList());
         } on CacheException {
           return Left(
             ServerFailure(
@@ -78,7 +78,7 @@ class ChatRepositoryImpl extends ChatRepository {
     } else {
       try {
         final cachedChats = await localDataSource.getChats();
-        return Right(cachedChats);
+        return Right(cachedChats.map((chat) => chat.toEntity()).toList());
       } on CacheException {
         return Left(
           CacheFailure('No internet and failed to return cached chats'),
@@ -93,14 +93,14 @@ class ChatRepositoryImpl extends ChatRepository {
       try {
         final chatModel = await remoteDataSource.getChatById(chatId);
         await localDataSource.cacheChat(chatModel); // optional cache update
-        return Right(chatModel);
+        return Right(chatModel.toEntity());
       } on NotFoundException {
         return Left(NotFoundFailure('Chat with that ID not found'));
       } on ServerException {
         // Remote failed → try local
         try {
           final cachedChat = await localDataSource.getChatById(chatId);
-          return Right(cachedChat);
+          return Right(cachedChat.toEntity());
         } on CacheException {
           return Left(ServerFailure('Server failed and no cached chat found'));
         }
@@ -110,7 +110,7 @@ class ChatRepositoryImpl extends ChatRepository {
     } else {
       try {
         final cachedChat = await localDataSource.getChatById(chatId);
-        return Right(cachedChat);
+        return Right(cachedChat.toEntity());
       } on CacheException {
         return Left(CacheFailure('No internet and no cached chat found'));
       }
@@ -126,12 +126,12 @@ class ChatRepositoryImpl extends ChatRepository {
           chatId,
           messages,
         ); // optional cache update
-        return Right(messages);
+        return Right(messages.map((message) => message.toEntity()).toList());
       } on ServerException {
         // Remote failed → try cache
         try {
           final cachedMessages = await localDataSource.getChatMessage(chatId);
-          return Right(cachedMessages);
+          return Right(cachedMessages.map((message) => message.toEntity()).toList());
         } on CacheException {
           return Left(
             ServerFailure('Server failed and no cached messages found'),
@@ -143,7 +143,7 @@ class ChatRepositoryImpl extends ChatRepository {
     } else {
       try {
         final cachedMessages = await localDataSource.getChatMessage(chatId);
-        return Right(cachedMessages);
+        return Right(cachedMessages.map((message) => message.toEntity()).toList());
       } on CacheException {
         return Left(CacheFailure('No internet and no cached messages found'));
       }
@@ -159,18 +159,9 @@ class ChatRepositoryImpl extends ChatRepository {
         final ChatModel chatModel = await remoteDataSource.initiateChat(userId);
         await localDataSource.cacheChat(chatModel);
 
-        return Right(chatModel);
+        return Right(chatModel.toEntity());
       } on ServerException {
-        try {
-          final Chat cachedChat = await localDataSource.getChatById(userId);
-          return Right(cachedChat); // return cached chat
-        } on CacheException {
-          return Left(
-            ServerFailure('Server failed and no cached chat available'),
-          );
-        } catch (_) {
-          return Left(ServerFailure('Unexpected error'));
-        }
+        return Left(ServerFailure('Unexpected error'));
       } catch (_) {
         return Left(ServerFailure('Unexpected error'));
       }
@@ -203,14 +194,14 @@ class ChatRepositoryImpl extends ChatRepository {
   @override
   Future<Either<Failure, void>> sendMessage(Message message) async {
     final isConnected = await networkInfo.isConnected;
-
+    final messageModel = MessageModel.fromEntity(message);
     if (isConnected) {
       try {
-        await remoteDataSource.sendMessage(message);
+        await remoteDataSource.sendMessage(messageModel);
         return Right(null);
       } on ServerException {
         try {
-          await localDataSource.sendMessage(message);
+          await localDataSource.sendMessage(messageModel);
           return Right(null);
         } on CacheException {
           return Left(
@@ -224,7 +215,7 @@ class ChatRepositoryImpl extends ChatRepository {
       }
     } else {
       try {
-        await localDataSource.sendMessage(message);
+        await localDataSource.sendMessage(messageModel);
         return Right(null);
       } on CacheException {
         return Left(CacheFailure('Unable to cache message offline'));

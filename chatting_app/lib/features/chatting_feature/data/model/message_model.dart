@@ -3,7 +3,6 @@ import 'package:chatting_app/features/chatting_feature/data/model/user_model.dar
 import 'package:chatting_app/features/chatting_feature/data/model/chat_model.dart';
 
 class MessageModel extends Message {
-
   const MessageModel({
     required super.id,
     required super.sender,
@@ -31,8 +30,20 @@ class MessageModel extends Message {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'sender': sender is UserModel ? (sender as UserModel).toJson() : UserModel(id: sender.id, name: sender.name, email: sender.email).toJson(),
-      'chat': chat is ChatModel ? (chat as ChatModel).toJson() : ChatModel(id: chat.id, user1: chat.user1, user2: chat.user2).toJson(),
+      'sender': sender is UserModel
+          ? (sender as UserModel).toJson()
+          : UserModel(
+              id: sender.id,
+              name: sender.name,
+              email: sender.email,
+            ).toJson(),
+      'chat': chat is ChatModel
+          ? (chat as ChatModel).toJson()
+          : ChatModel(
+              id: chat.id,
+              user1: chat.user1,
+              user2: chat.user2,
+            ).toJson(),
       'timestamp': timestamp.toIso8601String(),
       'content': content,
       'type': type,
@@ -40,13 +51,24 @@ class MessageModel extends Message {
     };
   }
 
+  factory MessageModel.fromEntity(Message message) {
+    return MessageModel(
+      id: message.id,
+      sender: UserModel.fromEntity(message.sender),
+      chat: ChatModel.fromEntity(message.chat),
+      timestamp: message.timestamp,
+      content: message.content,
+      type: message.type,
+    );
+  }
+
   Message toEntity() {
     return Message(
       id: id,
-      sender: sender,
-      chat: chat,
-      content: content,
+      sender: sender is UserModel ? (sender as UserModel).toEntity() : sender,
+      chat: chat is ChatModel ? (chat as ChatModel).toEntity() : chat,
       timestamp: timestamp,
+      content: content,
       type: type,
       isRead: isRead,
     );

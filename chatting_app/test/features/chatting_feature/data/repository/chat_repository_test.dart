@@ -5,12 +5,15 @@ import 'package:chatting_app/features/chatting_feature/data/datasource/chat_loca
 import 'package:chatting_app/features/chatting_feature/data/datasource/chat_remote_data_source.dart';
 import 'package:chatting_app/features/chatting_feature/data/datasource/web_socket_channel_factory.dart';
 import 'package:chatting_app/features/chatting_feature/data/model/chat_model.dart';
+import 'package:chatting_app/features/chatting_feature/data/model/message_model.dart';
 import 'package:chatting_app/features/chatting_feature/data/repositories/chat_repository_impl.dart';
+import 'package:chatting_app/features/chatting_feature/domain/entities/chat.dart';
 import 'package:chatting_app/features/chatting_feature/domain/entities/message.dart';
 import 'package:chatting_app/features/chatting_feature/domain/entities/user.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:collection/collection.dart';
 
 
 class MockChatLocalDataSource extends Mock implements ChatLocalDataSource {}
@@ -51,11 +54,11 @@ void main() {
 
   final testUser2 = User(id: 'user2', name: 'Bob', email: 'bob@example.com');
 
-  ChatModel testChat = ChatModel(id: '1', user1: testUser1, user2: testUser2);
-
+  Chat testChat = Chat(id: '1', user1: testUser1, user2: testUser2);
+  ChatModel testChatModel = ChatModel.fromEntity(testChat);
   final tChats = [
-    ChatModel(id: '1', user1: testUser1, user2: testUser2),
-    ChatModel(id: '2', user1: testUser1, user2: testUser2),
+    Chat(id: '1', user1: testUser1, user2: testUser2),
+    Chat(id: '2', user1: testUser1, user2: testUser2),
   ];
 
   final String chatId = '123';
@@ -68,6 +71,12 @@ void main() {
     content: 'Hey',
     type: 'text',
   );
+
+  final tChatModels = tChats.map((tChat) => ChatModel.fromEntity(tChat)).toList();
+
+  final testMessageModel = MessageModel.fromEntity(testMessage);
+  const deepeq = DeepCollectionEquality();
+
 
 
   group('Delete chat Testing', () {
@@ -126,18 +135,20 @@ void main() {
         when(() => networkInfo.isConnected).thenAnswer((_) async => true);
         when(
           () => mockChatRemoteDataSource.getChats(),
-        ).thenAnswer((_) async => tChats);
+        ).thenAnswer((_) async => tChatModels);
         when(
-          () => mockChatLocalDataSource.cacheChats(tChats),
+          () => mockChatLocalDataSource.cacheChats(tChatModels),
         ).thenAnswer((_) async => Future.value());
 
         // act
         final result = await repositoryImpl.getChat();
 
         // assert
-        expect(result, Right(tChats));
+        // expect(result, Right(tChats));
+        expect(result.getOrElse(() => []), equals(Right(tChats).getOrElse(() => [])));
+
         verify(() => mockChatRemoteDataSource.getChats()).called(1);
-        verify(() => mockChatLocalDataSource.cacheChats(tChats)).called(1);
+        verify(() => mockChatLocalDataSource.cacheChats(tChatModels)).called(1);
         verifyNoMoreInteractions(mockChatRemoteDataSource);
         verifyNoMoreInteractions(mockChatLocalDataSource);
       },
@@ -153,13 +164,15 @@ void main() {
         ).thenThrow(ServerException());
         when(
           () => mockChatLocalDataSource.getChats(),
-        ).thenAnswer((_) async => tChats);
+        ).thenAnswer((_) async => tChatModels);
 
         // act
         final result = await repositoryImpl.getChat();
 
         // assert
-        expect(result, Right(tChats));
+        // expect(result, Right(tChats));
+        expect(result.getOrElse(() => []), equals(Right(tChats).getOrElse(() => [])));
+
         verify(() => mockChatRemoteDataSource.getChats()).called(1);
         verify(() => mockChatLocalDataSource.getChats()).called(1);
       },
@@ -199,13 +212,15 @@ void main() {
       when(() => networkInfo.isConnected).thenAnswer((_) async => false);
       when(
         () => mockChatLocalDataSource.getChats(),
-      ).thenAnswer((_) async => tChats);
+      ).thenAnswer((_) async => tChatModels);
 
       // act
       final result = await repositoryImpl.getChat();
 
       // assert
-      expect(result, Right(tChats));
+      // expect(result, Right(tChats));
+      expect(result.getOrElse(() => []), equals(Right(tChats).getOrElse(() => [])));
+
       verify(() => mockChatLocalDataSource.getChats()).called(1);
       verifyZeroInteractions(mockChatRemoteDataSource);
     });
@@ -235,16 +250,16 @@ void main() {
       when(() => networkInfo.isConnected).thenAnswer((_) async => true);
       when(
         () => mockChatRemoteDataSource.getChatById(chatId),
-      ).thenAnswer((_) async => testChat);
+      ).thenAnswer((_) async => testChatModel);
       when(
-        () => mockChatLocalDataSource.cacheChat(testChat),
+        () => mockChatLocalDataSource.cacheChat(testChatModel),
       ).thenAnswer((_) async => Future.value());
 
       final result = await repositoryImpl.getChatById(chatId);
 
       expect(result, Right(testChat));
       verify(() => mockChatRemoteDataSource.getChatById(chatId)).called(1);
-      verify(() => mockChatLocalDataSource.cacheChat(testChat)).called(1);
+      verify(() => mockChatLocalDataSource.cacheChat(testChatModel)).called(1);
       verifyNever(() => mockChatLocalDataSource.getChatById(any()));
     });
 
@@ -255,11 +270,13 @@ void main() {
       ).thenThrow(ServerException());
       when(
         () => mockChatLocalDataSource.getChatById(chatId),
-      ).thenAnswer((_) async => testChat);
+      ).thenAnswer((_) async => testChatModel);
 
       final result = await repositoryImpl.getChatById(chatId);
 
       expect(result, Right(testChat));
+      expect(result.getOrElse(() => testChat), equals(Right(testChat).getOrElse(() => testChat)));
+
       verify(() => mockChatRemoteDataSource.getChatById(chatId)).called(1);
       verify(() => mockChatLocalDataSource.getChatById(chatId)).called(1);
     });
@@ -284,11 +301,13 @@ void main() {
       when(() => networkInfo.isConnected).thenAnswer((_) async => false);
       when(
         () => mockChatLocalDataSource.getChatById(chatId),
-      ).thenAnswer((_) async => testChat);
+      ).thenAnswer((_) async => testChatModel);
 
       final result = await repositoryImpl.getChatById(chatId);
 
       expect(result, Right(testChat));
+      expect(result.getOrElse(() => testChat), equals(Right(testChat).getOrElse(() => testChat)));
+
       verify(() => mockChatLocalDataSource.getChatById(chatId)).called(1);
       verifyNever(() => mockChatRemoteDataSource.getChatById(any()));
     });
@@ -317,17 +336,17 @@ void main() {
         when(() => networkInfo.isConnected).thenAnswer((_) async => true);
         when(
           () => mockChatRemoteDataSource.getChatMessage(chatId),
-        ).thenAnswer((_) async => [testMessage]);
+        ).thenAnswer((_) async => [testMessageModel]);
         when(
-          () => mockChatLocalDataSource.cacheMessages(chatId, [testMessage]),
+          () => mockChatLocalDataSource.cacheMessages(chatId, [testMessageModel]),
         ).thenAnswer((_) async {});
 
         final result = await repositoryImpl.getChatMessage(chatId);
+        expect(result.getOrElse(() => []), equals(Right([testMessage]).getOrElse(() => [])));
 
-        expect(result.toString(), equals(Right([testMessage]).toString()));
         verify(() => mockChatRemoteDataSource.getChatMessage(chatId)).called(1);
         verify(
-          () => mockChatLocalDataSource.cacheMessages(chatId, [testMessage]),
+          () => mockChatLocalDataSource.cacheMessages(chatId, [testMessageModel]),
         ).called(1);
       },
     );
@@ -339,7 +358,7 @@ void main() {
       ).thenThrow(ServerException());
       when(
         () => mockChatLocalDataSource.getChatMessage(chatId),
-      ).thenAnswer((_) async => [testMessage]);
+      ).thenAnswer((_) async => [testMessageModel]);
 
       final result = await repositoryImpl.getChatMessage(chatId);
 
@@ -374,33 +393,19 @@ void main() {
         when(() => networkInfo.isConnected).thenAnswer((_) async => true);
         when(
           () => mockChatRemoteDataSource.initiateChat('user2'),
-        ).thenAnswer((_) async => testChat);
+        ).thenAnswer((_) async => testChatModel);
         when(
-          () => mockChatLocalDataSource.cacheChat(testChat),
+          () => mockChatLocalDataSource.cacheChat(testChatModel),
         ).thenAnswer((_) async {});
 
         final result = await repositoryImpl.initiateChat('user2');
 
         expect(result.toString(), Right(testChat).toString());
         verify(() => mockChatRemoteDataSource.initiateChat('user2')).called(1);
-        verify(() => mockChatLocalDataSource.cacheChat(testChat)).called(1);
+        verify(() => mockChatLocalDataSource.cacheChat(testChatModel)).called(1);
       },
     );
 
-    test('should return cached chat if server fails', () async {
-      when(() => networkInfo.isConnected).thenAnswer((_) async => true);
-      when(
-        () => mockChatRemoteDataSource.initiateChat('user2'),
-      ).thenThrow(ServerException());
-      when(
-        () => mockChatLocalDataSource.getChatById('user2'),
-      ).thenAnswer((_) async => testChat);
-
-      final result = await repositoryImpl.initiateChat('user2');
-
-      expect(result, equals(Right(testChat)));
-      verify(() => mockChatLocalDataSource.getChatById('user2')).called(1);
-    });
 
     test('should return CacheFailure if offline and no cached chat', () async {
       when(() => networkInfo.isConnected).thenAnswer((_) async => false);
@@ -450,46 +455,46 @@ void main() {
     test('should send message remotely when online', () async {
       when(() => networkInfo.isConnected).thenAnswer((_) async => true);
       when(
-        () => mockChatRemoteDataSource.sendMessage(testMessage),
-      ).thenAnswer((_) async {});
-
-      final result = await repositoryImpl.sendMessage(testMessage);
-
-      expect(result.toString(), Right(null).toString());
-      verify(() => mockChatRemoteDataSource.sendMessage(testMessage)).called(1);
-    });
-
-    test('should cache message locally if remote fails', () async {
-      when(() => networkInfo.isConnected).thenAnswer((_) async => true);
-      when(
-        () => mockChatRemoteDataSource.sendMessage(testMessage),
-      ).thenThrow(ServerException());
-      when(
-        () => mockChatLocalDataSource.sendMessage(testMessage),
-      ).thenAnswer((_) async {});
-
-      final result = await repositoryImpl.sendMessage(testMessage);
-
-      expect(result.toString(), Right(null).toString());
-      verify(() => mockChatLocalDataSource.sendMessage(testMessage)).called(1);
-    });
-
-    test('should send message locally when offline', () async {
-      when(() => networkInfo.isConnected).thenAnswer((_) async => false);
-      when(
-        () => mockChatLocalDataSource.sendMessage(testMessage),
+        () => mockChatRemoteDataSource.sendMessage(testMessageModel),
       ).thenAnswer((_) async {});
 
       final result = await repositoryImpl.sendMessage(testMessage);
 
       expect(result, Right(null));
-      verify(() => mockChatLocalDataSource.sendMessage(testMessage)).called(1);
+      verify(() => mockChatRemoteDataSource.sendMessage(testMessageModel)).called(1);
+    });
+
+    test('should cache message locally if remote fails', () async {
+      when(() => networkInfo.isConnected).thenAnswer((_) async => true);
+      when(
+        () => mockChatRemoteDataSource.sendMessage(testMessageModel),
+      ).thenThrow(ServerException());
+      when(
+        () => mockChatLocalDataSource.sendMessage(testMessageModel),
+      ).thenAnswer((_) async {});
+
+      final result = await repositoryImpl.sendMessage(testMessage);
+
+      expect(result.toString(), Right(null).toString());
+      verify(() => mockChatLocalDataSource.sendMessage(testMessageModel)).called(1);
+    });
+
+    test('should send message locally when offline', () async {
+      when(() => networkInfo.isConnected).thenAnswer((_) async => false);
+      when(
+        () => mockChatLocalDataSource.sendMessage(testMessageModel),
+      ).thenAnswer((_) async {});
+
+      final result = await repositoryImpl.sendMessage(testMessage);
+
+      expect(result, Right(null));
+      verify(() => mockChatLocalDataSource.sendMessage(testMessageModel)).called(1);
     });
 
     test('should return CacheFailure if offline and caching fails', () async {
       when(() => networkInfo.isConnected).thenAnswer((_) async => false);
       when(
-        () => mockChatLocalDataSource.sendMessage(testMessage),
+        () => mockChatLocalDataSource.sendMessage(testMessageModel),
       ).thenThrow(CacheException());
 
       final result = await repositoryImpl.sendMessage(testMessage);

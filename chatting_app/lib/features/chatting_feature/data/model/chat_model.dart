@@ -33,4 +33,21 @@ class ChatModel extends Chat {
             ).toJson(),
     };
   }
+
+  factory ChatModel.fromEntity(Chat chat) {
+    return ChatModel(
+      id: chat.id,
+      user1: UserModel.fromEntity(chat.user1),
+      user2: UserModel.fromEntity(chat.user2),
+    );
+  }
+
+  Chat toEntity() {
+    return Chat(
+      id: id,
+      user1: (user1 as UserModel).toEntity(),
+      user2: (user2 as UserModel).toEntity(),
+    );
+  }
+
 }

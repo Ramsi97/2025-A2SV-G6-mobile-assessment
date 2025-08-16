@@ -15,9 +15,9 @@ abstract class ChatRemoteDataSource {
   Future<ChatModel> getChatById(String chatId);
   Future<void> deleteChat(String chatId);
   Future<ChatModel> initiateChat(String userId);
-  Future<void> sendMessage(Message message);
+  Future<void> sendMessage(MessageModel message);
   Stream<Message> receiveMessage();
-  Future<List<Message>> getChatMessage(String chatId);
+  Future<List<MessageModel>> getChatMessage(String chatId);
 
   Future<void> sendReadReceipt({required String messageId, required String readerId}) async {}
   
@@ -66,7 +66,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Future<List<Message>> getChatMessage(String chatId) async {
+  Future<List<MessageModel>> getChatMessage(String chatId) async {
     final response = await client.get(
       Uri.parse('$baseUrl/chats/$chatId'),
       headers: {'Content-Type': 'application/json', 'Authorization': 'token'},
