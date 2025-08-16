@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:chatting_app/core/error/exceptions.dart';
 import 'package:chatting_app/features/chatting_feature/data/model/message_model.dart';
-import 'package:chatting_app/features/chatting_feature/domain/entities/chat.dart';
 import 'package:chatting_app/features/chatting_feature/domain/entities/message.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../../core/constant/constant.dart';
 import '../model/chat_model.dart';
+import '../model/user_model.dart';
 
 abstract class ChatRemoteDataSource {
   Future<List<ChatModel>> getChats();
@@ -140,8 +140,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       final decoded = jsonDecode(data);
       return Message(
         id: decoded['id'],
-        sender: decoded['sender'],
-        chat: decoded['chat'],
+        sender: UserModel.fromJson(decoded['sender']),
+        chat: ChatModel.fromJson(decoded['chat']),
         timestamp: DateTime.parse(decoded['timestamp']),
         content: decoded['content'],
         type: decoded['type'],
